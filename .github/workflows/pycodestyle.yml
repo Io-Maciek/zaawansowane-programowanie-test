@@ -1,0 +1,25 @@
+name: Pycodestyle PEP8 Format Check
+
+on:
+  push:
+
+jobs:
+  style-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+
+      - name: Install pycodestyle
+        run: |
+          pip install pycodestyle
+
+      - name: Run pep8 format check
+        run: |
+          pycodestyle .

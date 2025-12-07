@@ -1,16 +1,18 @@
 from zad_1 import Student
 
+
 class Library:
     def __init__(self, city, street, zip_code, open_hours, phone):
-        self.city=city
-        self.street=street
-        self.zip_code=zip_code
+        self.city = city
+        self.street = street
+        self.zip_code = zip_code
         self.open_hours = open_hours
-        self.phone=phone
+        self.phone = phone
 
     def __str__(self):
         return f"Biblioteka {self.city} {self.zip_code}, {self.street}. Godziny otwarcia: {self.open_hours} | Kontakt: {self.phone}"
-    
+
+
 class Employee:
     def __init__(self, first_name, last_name, hire_date, birth_date,
                  city, street, zip_code, phone):
@@ -24,11 +26,13 @@ class Employee:
         self.phone = phone
 
     def __str__(self):
-        return (f"Pracownik: {self.first_name} {self.last_name}, zatrudniony od: {self.hire_date}, urodzony: {self.birth_date}, adres: {self.city}, {self.street} {self.zip_code}, kontakt: {self.phone}")
-    
+        return (f"Pracownik: {self.first_name} {self.last_name}, zatrudniony od: {self.hire_date}, "
+                "urodzony: {self.birth_date}, adres: {self.city}, {self.street} {self.zip_code}, kontakt: {self.phone}")
+
+
 class Book:
-    def __init__(self, library:Library, publication_date, author_name:str,
-                 author_surname:str, number_of_pages:int):
+    def __init__(self, library: Library, publication_date, author_name: str,
+                 author_surname: str, number_of_pages: int):
         self.library = library
         self.publication_date = publication_date
         self.author_name = author_name
@@ -39,7 +43,8 @@ class Book:
         return (f"Książka autorstwa {self.author_name} {self.author_surname}, "
                 f"opublikowana: {self.publication_date}, ilość stron: {self.number_of_pages}, "
                 f"{self.library}")
-    
+
+
 class Order:
     def __init__(self, employee, student: Student, books: list[Book], order_date):
         self.employee = employee

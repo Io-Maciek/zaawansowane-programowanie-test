@@ -2,15 +2,15 @@ import requests as r
 import argparse
 import random
 
-class Brewery:
 
+class Brewery:
     @staticmethod
     def get_random() -> str:
         response = r.get('https://api.openbrewerydb.org/v1/breweries/random')
         return response.json()[0]['id']
-    
+
     @staticmethod
-    def get_by_city(city:str)->list:
+    def get_by_city(city: str) -> list:
         response = r.get(f'https://api.openbrewerydb.org/v1/breweries/search?query={city}&per_page=20')
         return random.choice(response.json())['id']
 
@@ -37,7 +37,7 @@ class Brewery:
 
     def __repr__(self):
         return f"Brewery(name={self.name}, id={self.id})"
-    
+
     def __str__(self):
         return f"{self.name} ({self.id})\t\t{self.city}"
 
@@ -48,8 +48,8 @@ args = parser.parse_args()
 
 if args.city:
     print(args.city)
-    breweries = [Brewery(Brewery.get_by_city(args.city)) for _ in range(0,20)]
+    breweries = [Brewery(Brewery.get_by_city(args.city)) for _ in range(0, 20)]
 else:
-    breweries = [Brewery(Brewery.get_random()) for _ in range(0,20)]
+    breweries = [Brewery(Brewery.get_random()) for _ in range(0, 20)]
 for b in breweries:
     print(b)

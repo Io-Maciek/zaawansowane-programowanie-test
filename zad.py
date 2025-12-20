@@ -1,6 +1,6 @@
 import re
 
-def is_palindrome(text: str) -> bool: return text == text[::-1]
+def is_palindrome(text: str) -> bool: return text.lower().replace(" ", "") == text.lower().replace(" ", "")[::-1]
 
 def fibonacci(n: int) -> int:
     if n < 0:

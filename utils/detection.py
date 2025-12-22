@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from utils import model
 
+
 def count_crowd(image_bytes: bytes, threshold=0.3):
     # bytes -> numpy array
     np_arr = np.frombuffer(image_bytes, np.uint8)

@@ -13,26 +13,25 @@ app = Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    #return render_template_string(HTML,filename=filename, count=count, id=uid, image_bytes = base64.b64encode(result_bytes).decode("utf-8"))
     return html.index()
 
 
 @app.route("/process_image", methods=["POST"])
 def process_image():
-  file = request.files["image"]
-  filename = file.filename
+    file = request.files["image"]
+    filename = file.filename
 
-  if file is None:
-      return {"error": "image file missing"}, 400
+    if file is None:
+        return {"error": "image file missing"}, 400
 
-  image_bytes = file.read()
+    image_bytes = file.read()
 
-  task_id = str(uuid.uuid4())
+    task_id = str(uuid.uuid4())
 
-  tasks[task_id] = {"status": 0, "filename": filename}
-  task_queue.put((task_id, image_bytes))
+    tasks[task_id] = {"status": 0, "filename": filename}
+    task_queue.put((task_id, image_bytes))
 
-  return {"task_id": task_id}, 202
+    return {"task_id": task_id}, 202
 
 
 @app.route("/get_processed_image/<task_id>", methods=["GET"])
@@ -68,7 +67,7 @@ def get_processed_image(task_id):
 
 
 if __name__ == "__main__":
-  thread = Thread(target=worker, daemon=True)
-  thread.start()
-  
-  app.run()
+    thread = Thread(target=worker, daemon=True)
+    thread.start()
+
+    app.run()

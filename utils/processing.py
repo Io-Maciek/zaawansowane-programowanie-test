@@ -2,6 +2,7 @@ from utils.task_store import task_queue, tasks
 from utils import detection
 import base64
 
+
 def worker():
     while True:
         task_id, image_bytes = task_queue.get()

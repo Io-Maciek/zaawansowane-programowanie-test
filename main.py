@@ -62,6 +62,7 @@ def get_processed_image(task_id):
 
     return result
 
+# todo add route to detect people from internet URL image
 
 if __name__ == "__main__":
     thread = Thread(target=worker, daemon=True)

@@ -3,53 +3,72 @@ from utils import detection
 from io import BytesIO
 import uuid
 import base64
+from utils.task_store import task_queue, tasks
+from utils.processing import worker
+from threading import Thread
+from template import html
 
 app = Flask(__name__)
 
-HTML = """
-<!doctype html>
-<title>Liczenie osób</title>
-
-<h1>Dodaj zdjęcie</h1>
-<form method="post" enctype="multipart/form-data">
-  <input type="file" name="image" required>
-  <button type="submit">Wyślij</button>
-</form>
-
-{% if count %}
-<hr>
-<h2>Wykryto osób: {{ count }}</h2>
-
-<img id="result"  src='data:image/jpeg;base64,{{ image_bytes }}' style="max-width:600px">>
-
-<br><br>
-<button onclick="download()">DOWNLOAD</button>
-
-<script>
-function download() {
-  const a = document.createElement("a");
-  a.href = document.getElementById("result").src;
-  a.download = "result.jpg";
-  a.click();
-}
-</script>
-{% endif %}
-"""
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == "POST":
-        file = request.files["image"]
-        filename = file.filename
-        image_bytes = file.read()
-        uid = str(uuid.uuid4())
+    #return render_template_string(HTML,filename=filename, count=count, id=uid, image_bytes = base64.b64encode(result_bytes).decode("utf-8"))
+    return html.index()
 
-        count, result_bytes = detection.count_crowd(image_bytes)
 
-        return render_template_string(HTML, count=count, id=uid, image_bytes = base64.b64encode(result_bytes).decode("utf-8"))
+@app.route("/process_image", methods=["POST"])
+def process_image():
+  file = request.files["image"]
+  filename = file.filename
 
-    return render_template_string(HTML, count=None)
+  if file is None:
+      return {"error": "image file missing"}, 400
+
+  image_bytes = file.read()
+
+  task_id = str(uuid.uuid4())
+
+  tasks[task_id] = {"status": 0, "filename": filename}
+  task_queue.put((task_id, image_bytes))
+
+  return {"task_id": task_id}, 202
+
+
+@app.route("/get_processed_image/<task_id>", methods=["GET"])
+def get_processed_image(task_id):
+    task = tasks.get(task_id)
+
+    if task is None:
+        return {"error": "task not found", "status": -1}, 404
+
+    if task["status"] == 0:
+        return {"status": 0}
+
+    elif task["status"] != 1:
+        # też warto usunąć
+        result = {
+            "status": -1,
+            "error": task.get("error", "unknown error")
+        }
+        del tasks[task_id]
+        return result
+
+    # status == 1
+    result = {
+        "status": 1,
+        "count": task["count"],
+        "image_bytes": task["image_bytes"],
+        "filename": task["filename"]
+    }
+
+    del tasks[task_id]
+
+    return result
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+  thread = Thread(target=worker, daemon=True)
+  thread.start()
+  
+  app.run()

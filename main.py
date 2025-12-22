@@ -1,8 +1,5 @@
-from flask import Flask, request, render_template_string, send_file
-from utils import detection
-from io import BytesIO
+from flask import Flask, request
 import uuid
-import base64
 from utils.task_store import task_queue, tasks
 from utils.processing import worker
 from threading import Thread

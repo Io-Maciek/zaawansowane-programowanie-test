@@ -6,7 +6,14 @@ def index() -> str:
 <h1>Dodaj zdjęcie</h1>
 
 <form id="uploadForm" enctype="multipart/form-data">
-  <input type="file" name="image" id="imageInput" required>
+  <label>Wybierz plik: 
+    <input type="file" name="image" id="imageInput">
+  </label>
+  <label>Lub wpisz link do obrazu: 
+    <input type="text" name="image_url" id="imageUrlInput" placeholder="https://example.com/image.jpg">
+  </label>
+
+  <br>
   <button type="submit" id="submitBtn">Wyślij</button>
 </form>
 
@@ -32,64 +39,86 @@ const countEl = document.getElementById("count");
 const resultImage = document.getElementById("resultImage");
 
 form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
     countEl.innerText = "";
     resultImage.src = "";
     resultContainer.style.display = "none";
 
-  submitBtn.disabled = true;
-  statusEl.innerText = "Wysyłanie obrazu...";
+    submitBtn.disabled = true;
+    statusEl.innerText = "Wysyłanie obrazu...";
 
-  const formData = new FormData(form);
+    const file = document.getElementById("imageInput").files[0];
+    const url = document.getElementById("imageUrlInput").value.trim();
 
-  const res = await fetch("/process_image", {
-    method: "POST",
-    body: formData
-  });
+    let res;
 
-  const data = await res.json();
-  statusEl.innerText = "Przetwarzanie obrazu...";
+    if (file) {
+        // Wysyłamy plik
+        const formData = new FormData();
+        formData.append("image", file);
 
-  pollStatus(data.task_id);
+        res = await fetch("/process_image", {
+            method: "POST",
+            body: formData
+        });
+
+    } else if (url) {
+        // Wysyłamy URL w JSON
+        res = await fetch("/process_image_url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url })
+        });
+
+    } else {
+        alert("Proszę wybrać plik lub wpisać link do obrazu");
+        submitBtn.disabled = false;
+        return;
+    }
+
+    const data = await res.json();
+    statusEl.innerText = "Przetwarzanie obrazu...";
+
+    pollStatus(data.task_id);
 });
 
 function pollStatus(taskId) {
-  const interval = setInterval(async () => {
-    const res = await fetch(`/get_processed_image/${taskId}`);
-    const data = await res.json();
+    const interval = setInterval(async () => {
+        const res = await fetch(`/get_processed_image/${taskId}`);
+        const data = await res.json();
 
-    if (data.status === 0) {
-      statusEl.innerText = "Przetwarzanie obrazu...";
-    }
+        if (data.status === 0) {
+            statusEl.innerText = "Przetwarzanie obrazu...";
+        }
 
-    if (data.status === 1) {
-      clearInterval(interval);
+        if (data.status === 1) {
+            clearInterval(interval);
+            resultFilename = data.filename;
+            document.getElementById("imageInput").value = "";
+            document.getElementById("imageUrlInput").value = "";
+            
 
-    console.log(data.filename);
-      resultFilename = data.filename;
+            statusEl.innerText = "Gotowe!";
+            countEl.innerText = data.count;
+            resultImage.src = "data:image/jpeg;base64," + data.image_bytes;
+            resultContainer.style.display = "block";
+            submitBtn.disabled = false;
+        }
 
-      statusEl.innerText = "Gotowe!";
-      countEl.innerText = data.count;
-      resultImage.src = "data:image/jpeg;base64," + data.image_bytes;
-      resultContainer.style.display = "block";
-      submitBtn.disabled = false;
-    }
-
-    if (data.status === -1) {
-      clearInterval(interval);
-      statusEl.innerText = "Błąd: " + data.error;
-      submitBtn.disabled = false;
-    }
-  }, 1000);
+        if (data.status === -1) {
+            clearInterval(interval);
+            statusEl.innerText = "Błąd: " + data.error;
+            submitBtn.disabled = false;
+        }
+    }, 1000);
 }
 
 function download() {
-console.log(resultFilename);
-  const a = document.createElement("a");
-  a.href = resultImage.src;
-  a.download = resultFilename;
-  a.click();
+    const a = document.createElement("a");
+    a.href = resultImage.src;
+    a.download = resultFilename;
+    a.click();
 }
 </script>
 """

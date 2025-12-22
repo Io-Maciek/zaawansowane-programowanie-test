@@ -4,6 +4,8 @@ from utils.task_store import task_queue, tasks
 from utils.processing import worker
 from threading import Thread
 from template import html
+import requests as r
+import os
 
 app = Flask(__name__)
 
@@ -62,10 +64,33 @@ def get_processed_image(task_id):
 
     return result
 
-# todo add route to detect people from internet URL image
+
+@app.route("/process_image_url", methods=["POST"])
+def process_image_url():
+    json_data = request.get_json()
+    if not json_data or "url" not in json_data:
+        return {"error": "url missing"}, 400
+
+    url = json_data["url"]
+    try:
+        resp = r.get(url)
+        resp.raise_for_status()
+        image_bytes = resp.content
+    except Exception as e:
+        return {"error": f"failed to download image: {e}"}, 400
+
+    filename = os.path.basename(url)
+    task_id = str(uuid.uuid4())
+
+    tasks[task_id] = {"status": 0, "filename": filename}
+    task_queue.put((task_id, image_bytes))
+
+    return {"task_id": task_id}, 202
+
 
 if __name__ == "__main__":
     thread = Thread(target=worker, daemon=True)
     thread.start()
 
     app.run()
+# todo: download 1000 photos of people, run those throuth the api

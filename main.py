@@ -1,6 +1,6 @@
 from flask import Flask, request
 import uuid
-from utils.task_store import task_queue, tasks
+from utils.task_store import task_queue, tasks, tasks_lock, stop_event
 from utils.processing import worker
 from threading import Thread
 from template import html
@@ -17,50 +17,51 @@ def index():
 
 @app.route("/process_image", methods=["POST"])
 def process_image():
-    file = request.files["image"]
-    filename = file.filename
-
+    file = request.files.get("image")
     if file is None:
         return {"error": "image file missing"}, 400
 
     image_bytes = file.read()
-
+    filename = file.filename
     task_id = str(uuid.uuid4())
 
-    tasks[task_id] = {"status": 0, "filename": filename}
-    task_queue.put((task_id, image_bytes))
+    with tasks_lock:
+        tasks[task_id] = {
+            "status": 0,
+            "filename": filename
+        }
 
+    task_queue.put((task_id, image_bytes))
     return {"task_id": task_id}, 202
 
 
 @app.route("/get_processed_image/<task_id>", methods=["GET"])
 def get_processed_image(task_id):
-    task = tasks.get(task_id)
+    with tasks_lock:
+        task = tasks.get(task_id)
 
-    if task is None:
-        return {"error": "task not found", "status": -1}, 404
+        if task is None:
+            return {"error": "task not found", "status": -1}, 404
 
-    if task["status"] == 0:
-        return {"status": 0}
+        if task["status"] == 0:
+            return {"status": 0}
 
-    elif task["status"] != 1:
-        # też warto usunąć
+        if task["status"] != 1:
+            result = {
+                "status": -1,
+                "error": task.get("error", "unknown error")
+            }
+            del tasks[task_id]
+            return result
+
+        # status == 1
         result = {
-            "status": -1,
-            "error": task.get("error", "unknown error")
+            "status": 1,
+            "count": task["count"],
+            "image_bytes": task["image_bytes"],
+            "filename": task["filename"]
         }
         del tasks[task_id]
-        return result
-
-    # status == 1
-    result = {
-        "status": 1,
-        "count": task["count"],
-        "image_bytes": task["image_bytes"],
-        "filename": task["filename"]
-    }
-
-    del tasks[task_id]
 
     return result
 
@@ -72,6 +73,7 @@ def process_image_url():
         return {"error": "url missing"}, 400
 
     url = json_data["url"]
+
     try:
         resp = r.get(url)
         resp.raise_for_status()
@@ -82,15 +84,27 @@ def process_image_url():
     filename = os.path.basename(url)
     task_id = str(uuid.uuid4())
 
-    tasks[task_id] = {"status": 0, "filename": filename}
-    task_queue.put((task_id, image_bytes))
+    with tasks_lock:
+        tasks[task_id] = {
+            "status": 0,
+            "filename": filename
+        }
 
+    task_queue.put((task_id, image_bytes))
     return {"task_id": task_id}, 202
 
 
 if __name__ == "__main__":
-    thread = Thread(target=worker, daemon=True)
-    thread.start()
+    _threads = []
+    for i in range(2):
+        t = Thread(target=worker, daemon=True, args=(f"{i}",))
+        t.start()
+        _threads.append(t)
 
-    app.run()
-# todo: download 1000 photos of people, run those throuth the api
+    try:
+        app.run(debug=False, use_reloader=False)
+    except KeyboardInterrupt:
+        print("\nCtrl+C pressed, stopping workers...")
+        stop_event.set()
+        for t in _threads:
+            t.join()

@@ -63,6 +63,6 @@ if __name__ == "__main__":
                 print(f"[{timestamp()}]\tX ERROR {pending[task_id]['filename']} - {response['error']} ({completed_count}/{total_images})")
                 del pending[task_id]
 
-        time.sleep(1.0) # sleep, aby nie wysylac za duzo zapytan do API
+        time.sleep(1.0)  # sleep, aby nie wysylac za duzo zapytan do API
 
     print(f"\n[{timestamp()}]\tAll tasks completed: {total_images}")

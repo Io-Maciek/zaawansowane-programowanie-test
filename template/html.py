@@ -6,10 +6,10 @@ def index() -> str:
 <h1>Dodaj zdjęcie</h1>
 
 <form id="uploadForm" enctype="multipart/form-data">
-  <label>Wybierz plik: 
+  <label>Wybierz plik:
     <input type="file" name="image" id="imageInput">
   </label>
-  <label>Lub wpisz link do obrazu: 
+  <label>Lub wpisz link do obrazu:
     <input type="text" name="image_url" id="imageUrlInput" placeholder="https://example.com/image.jpg">
   </label>
 
@@ -97,7 +97,6 @@ function pollStatus(taskId) {
             resultFilename = data.filename;
             document.getElementById("imageInput").value = "";
             document.getElementById("imageUrlInput").value = "";
-            
 
             statusEl.innerText = "Gotowe!";
             countEl.innerText = data.count;

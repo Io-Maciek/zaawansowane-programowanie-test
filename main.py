@@ -1,19 +1,50 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import uuid
-from utils.task_store import task_queue, tasks, tasks_lock, stop_event
+from utils.task_store import tasks_lock, tasks, stop_event
 from utils.processing import worker
 from threading import Thread
 from template import html
 import requests as r
 import os
+from utils import process_tasking
 
 app = Flask(__name__)
 
 
 @app.route("/", methods=["GET"])
 def index():
-    return html.index()
+    return html.index(queue_status())
 
+
+@app.route("/queue_status", methods=["GET"])
+def queue_status():
+    with tasks_lock:
+        processing = sum(1 for t in tasks.values() if t["status"] == 0)
+    return str(processing)
+    
+
+@app.route("/get_processed_image", methods=["POST"])
+@app.route("/get_processed_image/<task_id>", methods=["GET"])
+def get_processed_image(task_id: None|str=None):
+    if request.method == "GET":
+        return process_tasking.image_processing_get_status(task_id)
+
+    if request.method == "POST":
+        if not request.is_json:
+            return jsonify({"error": "JSON body required"}), 400
+        
+        json_data = request.get_json()
+
+        if not json_data or "task_ids" not in json_data:
+            return {"error": "tasks list is missing"}, 400
+
+        task_ids = json_data.get("task_ids")
+        if not isinstance(task_ids, list):
+            return {"error": "tasks list must be a list"}, 400
+        
+        return jsonify(
+                process_tasking.images_processing_get_status_batch(task_ids)
+                )
 
 @app.route("/process_image", methods=["POST"])
 def process_image():
@@ -21,49 +52,7 @@ def process_image():
     if file is None:
         return {"error": "image file missing"}, 400
 
-    image_bytes = file.read()
-    filename = file.filename
-    task_id = str(uuid.uuid4())
-
-    with tasks_lock:
-        tasks[task_id] = {
-            "status": 0,
-            "filename": filename
-        }
-
-    task_queue.put((task_id, image_bytes))
-    return {"task_id": task_id}, 202
-
-
-@app.route("/get_processed_image/<task_id>", methods=["GET"])
-def get_processed_image(task_id):
-    with tasks_lock:
-        task = tasks.get(task_id)
-
-        if task is None:
-            return {"error": "task not found", "status": -1}, 404
-
-        if task["status"] == 0:
-            return {"status": 0}
-
-        if task["status"] != 1:
-            result = {
-                "status": -1,
-                "error": task.get("error", "unknown error")
-            }
-            del tasks[task_id]
-            return result
-
-        # status == 1
-        result = {
-            "status": 1,
-            "count": task["count"],
-            "image_bytes": task["image_bytes"],
-            "filename": task["filename"]
-        }
-        del tasks[task_id]
-
-    return result
+    return process_tasking.image_bytes_to_task(bytes=file.read(), filename=file.filename)
 
 
 @app.route("/process_image_url", methods=["POST"])
@@ -81,17 +70,7 @@ def process_image_url():
     except Exception as e:
         return {"error": f"failed to download image: {e}"}, 400
 
-    filename = os.path.basename(url)
-    task_id = str(uuid.uuid4())
-
-    with tasks_lock:
-        tasks[task_id] = {
-            "status": 0,
-            "filename": filename
-        }
-
-    task_queue.put((task_id, image_bytes))
-    return {"task_id": task_id}, 202
+    return process_tasking.image_bytes_to_task(bytes=image_bytes, filename=os.path.basename(url))
 
 
 if __name__ == "__main__":

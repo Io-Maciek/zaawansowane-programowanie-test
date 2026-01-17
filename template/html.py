@@ -1,9 +1,10 @@
-def index() -> str:
+def index(queue:int) -> str:
     return """
 <!doctype html>
 <title>Liczenie osób</title>
 
 <h1>Dodaj zdjęcie</h1>
+<p id='queueStatusId'>Ilość procesowanych: """+queue+"""</p>
 
 <form id="uploadForm" enctype="multipart/form-data">
   <label>Wybierz plik:
@@ -30,6 +31,23 @@ def index() -> str:
 </div>
 
 <script>
+
+const queueCountEl = document.getElementById("queueStatusId");
+async function updateQueueCount() {
+    try {
+        const res = await fetch("/queue_status");
+        const text = await res.text();  // bo Twój endpoint zwraca str
+        queueCountEl.innerText = 'Ilość procesowanych: '+ text;
+    } catch (e) {
+        console.error("Błąd pobierania kolejki:", e);
+    }
+}
+
+// aktualizacja co sekundę
+setInterval(updateQueueCount, 1000);
+
+
+
 let resultFilename = "out_result.jpg";  // domyślna
 const form = document.getElementById("uploadForm");
 const submitBtn = document.getElementById("submitBtn");

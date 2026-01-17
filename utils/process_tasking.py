@@ -1,6 +1,7 @@
 from utils.task_store import task_queue, tasks, tasks_lock, stop_event
 import uuid
 
+
 def image_bytes_to_task(bytes, filename: str):
     task_id = str(uuid.uuid4())
 
@@ -13,7 +14,8 @@ def image_bytes_to_task(bytes, filename: str):
     task_queue.put((task_id, bytes))
     return {"task_id": task_id}, 202
 
-def image_processing_get_status(task_id:str) -> dict:
+
+def image_processing_get_status(task_id: str) -> dict:
     with tasks_lock:
         task = tasks.get(task_id)
 
@@ -42,7 +44,8 @@ def image_processing_get_status(task_id:str) -> dict:
 
     return result
 
-def images_processing_get_status_batch(tasks_ids:list[str]) -> dict:
+
+def images_processing_get_status_batch(tasks_ids: list[str]) -> dict:
     result = {}
     with tasks_lock:
         for task_id in tasks_ids:
@@ -68,7 +71,7 @@ def images_processing_get_status_batch(tasks_ids:list[str]) -> dict:
             result[task_id] = {
                 "status": 1,
                 "count": task["count"],
-                #"image_bytes": task["image_bytes"],
+                # "image_bytes": task["image_bytes"],
                 "filename": task["filename"]
             }
             del tasks[task_id]

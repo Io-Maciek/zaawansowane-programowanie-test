@@ -21,18 +21,18 @@ def queue_status():
     with tasks_lock:
         processing = sum(1 for t in tasks.values() if t["status"] == 0)
     return str(processing)
-    
+
 
 @app.route("/get_processed_image", methods=["POST"])
 @app.route("/get_processed_image/<task_id>", methods=["GET"])
-def get_processed_image(task_id: None|str=None):
+def get_processed_image(task_id: None | str = None):
     if request.method == "GET":
         return process_tasking.image_processing_get_status(task_id)
 
     if request.method == "POST":
         if not request.is_json:
             return jsonify({"error": "JSON body required"}), 400
-        
+
         json_data = request.get_json()
 
         if not json_data or "task_ids" not in json_data:
@@ -41,10 +41,11 @@ def get_processed_image(task_id: None|str=None):
         task_ids = json_data.get("task_ids")
         if not isinstance(task_ids, list):
             return {"error": "tasks list must be a list"}, 400
-        
+
         return jsonify(
                 process_tasking.images_processing_get_status_batch(task_ids)
                 )
+
 
 @app.route("/process_image", methods=["POST"])
 def process_image():

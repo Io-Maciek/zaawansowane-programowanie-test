@@ -14,7 +14,7 @@ def timestamp() -> str:
 
 # wysyla plik do api ze sciezki
 def upload_image(path: str) -> tuple[str, str]:
-   with requests.Session() as session:
+    with requests.Session() as session:
         with open(path, "rb") as f:
             files = {"image": f}
             resp = session.post(
@@ -28,8 +28,7 @@ def upload_image(path: str) -> tuple[str, str]:
 
 
 # zapytanie GET do statusu zdjecia i/lub jego wyniku
-def get_task_status_result(task_id: str, session: requests.Session) -> dict: return session.get(f"{API_URL}/get_processed_image/{task_id}",
-                timeout=(3, 30)).json()
+def get_task_status_result(task_id: str, session: requests.Session) -> dict: return session.get(f"{API_URL}/get_processed_image/{task_id}", timeout=(3, 30)).json()
 
 
 def get_tasks_status_batch(
@@ -51,7 +50,7 @@ if __name__ == "__main__":
         os.path.join(DATA_DIR, f)
         for f in os.listdir(DATA_DIR)
         if f.lower().endswith((".jpg", ".jpeg", ".png"))
-    ]#[0:200]
+    ]  # [0:200]
 
     print(f"Found {len(images)} images")
 
@@ -115,7 +114,6 @@ if __name__ == "__main__":
         time.sleep(SLEEP_TIME)
 
     print(f"\n[{timestamp()}]\tAll tasks completed: {total_images}")
-
 
 
 if __name__ == "__main__NOT":

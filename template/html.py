@@ -1,4 +1,4 @@
-def index(queue:int) -> str:
+def index(queue: int) -> str:
     return """
 <!doctype html>
 <title>Liczenie osób</title>

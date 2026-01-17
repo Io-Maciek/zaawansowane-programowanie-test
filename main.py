@@ -76,7 +76,7 @@ def process_image_url():
 
 if __name__ == "__main__":
     _threads = []
-    for i in range(2):
+    for i in range(6):
         t = Thread(target=worker, daemon=True, args=(f"{i}",))
         t.start()
         _threads.append(t)

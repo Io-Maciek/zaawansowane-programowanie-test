@@ -43,7 +43,6 @@ async function updateQueueCount() {
     }
 }
 
-// aktualizacja co sekundę
 setInterval(updateQueueCount, 1000);
 
 
